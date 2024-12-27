@@ -1,43 +1,35 @@
 <script setup>
-    import { defineProps } from 'vue';
-    import Login from './auth.vue/Login.vue';
-    import Register from './auth.vue/Register.vue';
-    import { ref } from 'vue';
+import { ref } from 'vue'
 
+import Register from './Register.vue';
 
-    const props=defineProps({
-        sTitulo:{
-            type:String,
-            default:'Titulo de tu app'
-        }
-    }); 
+import Login from './Login.vue';
 
-    const blLoginVisible= ref(true);
-    const blRegistroVisible = ref(false);
+const mostrarLogin = ref(true);
 
-    function MostrarRegistro(){
-        blLoginVisible.value=false;
-        blRegistroVisible.value=true;
-    }
+function cambiarVista(){
+    mostrarLogin.value =!mostrarLogin.value;
+}
 
-    function MostrarLogin(){
-        blLoginVisible.value=true;
-        blRegistroVisible.value=false;
-    }
+function usuarioLogueado(){
+    window.alert('Redirigiendo al Inventario...')
+}
 
-    
 </script>
 
 <template>
-    <div class="contenedor">
-        <h1>{{ sTitulo }}</h1>
-        <div class="loginregister">
-            <Login v-if="blLoginVisible" @cambioARegistro="MostrarRegistro"></Login>
-            <Register v-if="blRegistroVisible" @cambioALogin="MostrarRegistro"></Register>
-        </div>
-    </div>>
+    <div>
+        <button @click="cambiarVista">
+            {{ mostrarLogin ? 'Ir a registro' : 'Ir a login' }}
+        </button>
+        <Login v-if="mostrarLogin" @logueado="usuarioLogueado"/>
+        <Register v-else/>
+    </div>
+
 </template>
 
 <style scoped>
+
+
 
 </style>
