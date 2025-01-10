@@ -1,52 +1,66 @@
 <script setup>
 import { ref } from 'vue'
+import { createUserWithEmailAndPassword,sendEmailVerification } from 'firebase/auth';
+import { useFirebaseAuth,useFirestore } from 'vuefire';
+import {collection, addDoc, setDoc,doc } from "firebase/firestore";
 
-const nombre = ref(' ');
-const correo = ref(' ');
-const password = ref(' ');
+const sUsuarioRe=ref('');
+const sPasswordRe=ref('');
+const sRepetirPasswordRe=ref('');
+const errorMensaje=ref('');
+const buenMensaje=ref('');
+const sNombreUser=ref('');
 
-const errores = ref({
-    nombre: '',
-    correo: '',
-    password: '',
-});
+const emit=defineEmits(["cambiarALogin"]);
+const auth=useFirebaseAuth();
+const db = useFirestore();
 
-const usuariosExistentes = ref(JSON.parse(localStorage.getItem('usuarios') || '[]'));
+function presioneAceptar() {
+    errorMensaje.value='';
+    buenMensaje.value='';
 
-function registrarUsuario() {
-    errores.value.nombre = ' ';
-    errores.value.correo ='';
-    errores.value.password ='';
-   
+    if(!sUsuarioRe.value || !sPasswordRe.value){
+        errorMensaje.value='Todos los campos son obligatorios';
+    }
+    else{
+        createUserWithEmailAndPassword(auth, sUsuarioRe.value, sPasswordRe.value)
+        .then(registerOK)
+        .catch(registerOK);
+    }
+} 
 
-let hayErrores=false;
-
-if(!nombre.value.trim()){
-    errores.value.nombre = 'El nombre es obligatorio';
-    hayErrores=true;
+function registerNOK(error){
+        
+        if(error=="FirebaseError: Firebase: Error (auth/email-already-in-use)."){
+            alert("USUARIO YA EXISTE, INTENTA LOGEARTE");
+        }
+        else{
+            errorMensaje.value="FALLA POR: "+error;
+        }
 }
 
-if(!correo.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value)){
-    errores.value.correo = 'El correo no es valido'
-    hayErrores=true;
-}else if (usuariosExistentes.value.some((u) => u.correo === correo.value)) {
-    errores.value.correo = 'El correo ya existe';
-    hayErrores=true;
+function crearPerfil(){
+        const profileRef = collection(db, "/Profiles");
+        const postRef=doc(profileRef, auth.currentUser.uid);
+        setDoc(postRef,{nombre:sNombreUser.value})
+        //addDoc(collectionRefPerfiles,datosNuevoPerfil)
+        .then(perfilInsertadoOK)
+        .catch(perfilInsertadoNOK);
 }
 
-if(!password.value.trim()){
-    errores.value.password = 'La contraseña es obligatoria';
-    hayErrores=true;
+    function perfilInsertadoOK(nuevoPerfilRef){
+        alert("SE HA INSERTADO CORRECTAMENTE UN PERFIL NUEVO "+nuevoPerfilRef.id);
+        emit("cambiarALogin");
 }
 
-if(hayErrores) return;
-
-const nuevoUsuario = { nombre: nombre.value, correo: correo.value, password: password.value };  
-usuariosExistentes.value.push(nuevoUsuario);
-localStorage.setItem('usuarios', JSON.stringify(usuariosExistentes.value));
-
-window.alert('Usuario registrado correctamente');
+    function perfilInsertadoNOK(error){
+        
 }
+    
+    function presioneCancelar(){
+        emit("cambiarALogin");
+}
+
 </script>
 
 <template>
@@ -54,30 +68,35 @@ window.alert('Usuario registrado correctamente');
         <h1>Registrarse</h1>
         <div>
             <label>Nombre</label>
-            <input type="text" v-model="nombre" />
-            <p v-if="errores.nombre" class="error">{{ errores.nombre }}</p>
-        </div>
-        <div>
-            <label>Correo</label>
-            <input type="text" v-model="correo" />
-            <p v-if="errores.correo" class="error">{{ errores.correo }}</p>
+            <input type="text" v-model="sUsuarioRe" />
         </div>
         <div>
             <label>Contraseña</label>
-            <input type="password" v-model="password" />
-            <p v-if="errores.password" class="error">{{ errores.password }}</p>
+            <input type="password" v-model="sPasswordRe" />
+        </div>
+        <div>
+            <label>Repetir Contraseña</label>
+            <input type="password" v-model="sRepetirPasswordRe" />
+        </div>
+        <div>
+            <label>NOMBRE:</label>
+            <input v-model="sNombreUser" type="text"></input>
         </div>
 
-        <button @click="registrarUsuario">Registrar</button>
+        <button @click="presioneAceptar">ACEPTAR</button>
+        <button @click="presioneCancelar">CANCELAR</button>
+
+        <label>{{ errorMensaje }}</label>
+        <label>{{ buenMensaje }}</label>
     </div>
 </template> 
 
 <style scoped>
 
-.contenedor_registro{
-    background-color: fuchsia;
-    padding: 20px;
-    border-radius: 5px;
+    #contenedor_registro{
+        background-color: fuchsia;
+        padding: 20px;
+        border-radius: 5px;
 }
 
 </style>
